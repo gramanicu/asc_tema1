@@ -41,7 +41,6 @@ class Consumer(Thread):
     def run(self):
         cart_id = self.marketplace.new_cart()
         for operations in self.carts:
-
             for operation in operations:
                 if operation['type'] == 'add':
                     # Try adding the product to the cart
@@ -62,6 +61,7 @@ class Consumer(Thread):
                 elif operation['type'] == 'remove':
                     # Remove product from cart
                     count = operation['quantity']
+                    product = operation['product']
                     for _ in range(count):
                         self.marketplace.remove_from_cart(
                             cart_id, product)

@@ -29,6 +29,7 @@ class Marketplace:
         self.carts = []
 
         self.prod_id_lock = Lock()
+        self.cart_id_lock = Lock()
 
     def register_producer(self):
         """
@@ -39,7 +40,7 @@ class Marketplace:
         with self.prod_id_lock:
             producer_id = self.producers_current_id
             self.producers_current_id += 1
-            self.products.append([])
+            self.products.append(([], Lock()))
 
         return producer_id
 
@@ -56,10 +57,9 @@ class Marketplace:
         :returns True or False. If the caller receives False, it should wait and then try again.
         """
 
-        with self.producer_list_lock:
-            if self.products_per_producer[producer_id] < self.queue_size_per_producer:
-                self.products.append((product, producer_id))
-                self.products_per_producer[producer_id] += 1
+        with self.products[producer_id][1]:
+            if len(self.products[producer_id][0]) < self.queue_size_per_producer:
+                self.products[producer_id][0].append(product)
                 return True
 
             return False
@@ -70,12 +70,12 @@ class Marketplace:
 
         :returns an int representing the cart_id
         """
-        with self.carts_id_lock:
+        with self.cart_id_lock:
             cart_id = self.carts_current_id
             self.carts_current_id += 1
 
             # Add a new cart(list) to the carts list
-            self.carts.insert(cart_id, [])
+            self.carts.append([])
 
         return cart_id
 
@@ -92,19 +92,14 @@ class Marketplace:
         :returns True or False. If the caller receives False, it should wait and then try again
         """
 
-        # Search for the product in the product-producer id pairs list.
-        with self.products_lock:
-            prod_pair = next(
-                (prod_id_pair for prod_id_pair in self.products
-                 if prod_id_pair[0].name == product.name), None)
+        for i in range(len(self.products)):
+            for l_product in self.products[i][0]:
+                if l_product == product:
+                    self.carts[cart_id].append((product, i))
+                    self.products[i][0].remove(product)
+                    return True
 
-            if prod_pair is not None:
-                # Add the product from the cart and remove it from the store
-                self.carts[cart_id].append(prod_pair)
-                self.products.remove(prod_pair)
-                return True
-
-            return False
+        return False
 
     def remove_from_cart(self, cart_id, product):
         """
@@ -118,18 +113,11 @@ class Marketplace:
         """
 
         # Search for the product_pair in the cart.
-        with self.products_lock:
-            prod_pair = next(
-                (prod_id_pair for prod_id_pair in reversed(self.carts[cart_id])
-                 if prod_id_pair[0].name == product.name), None)
-
-            if prod_pair is not None:
-                # This should always be true (the product should be already in the cart)
-                self.products.append(prod_pair)
-
-                self.carts[cart_id].reverse()
-                self.carts[cart_id].remove(prod_pair)
-                self.carts[cart_id].reverse()
+        for c_product in self.carts[cart_id]:
+            if c_product[0] == product:
+                self.products[c_product[1]][0].append(product)
+                self.carts[cart_id].remove(c_product)
+                break
 
     def place_order(self, cart_id):
         """
@@ -141,8 +129,6 @@ class Marketplace:
         prod_list = []
 
         for prod_pair in self.carts[cart_id]:
-            with self.producer_list_lock:
-                self.products_per_producer[prod_pair[1]] -= 1
             prod_list.append(prod_pair[0])
 
         self.carts[cart_id].clear()
