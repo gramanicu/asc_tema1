@@ -30,6 +30,7 @@ class Marketplace:
 
         self.prod_id_lock = Lock()
         self.cart_id_lock = Lock()
+        self.print_lock = Lock()
 
     def register_producer(self):
         """
@@ -134,3 +135,13 @@ class Marketplace:
         self.carts[cart_id].clear()
 
         return prod_list
+
+    def print(self, value):
+        """
+        Print a string in a thread-safe way
+
+        :type value: String
+        :param value: The string to print
+        """
+        with self.print_lock:
+            print(value)

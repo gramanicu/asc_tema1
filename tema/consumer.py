@@ -70,4 +70,4 @@ class Consumer(Thread):
 
             # Print all bought products
             for prod in bought_products:
-                print(f'{self.name} bought {prod}')
+                self.marketplace.print(f'{self.name} bought {prod}')

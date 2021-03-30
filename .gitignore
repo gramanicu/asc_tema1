@@ -1,3 +1,5 @@
 /template
 /0*.out
 /1*.out
+*.zip
+.vscode

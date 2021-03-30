@@ -6,7 +6,6 @@ Assignment 1
 March 2021
 """
 
-from os import terminal_size
 from threading import Thread
 from time import sleep
 
