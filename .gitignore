@@ -2,4 +2,16 @@
 /0*.out
 /1*.out
 *.zip
-.vscode
+/.vscode
+/skel
+01.out
+02.out
+03.out
+04.out
+05.out
+06.out
+07.out
+08.out
+09.out
+10.out
+*.sorted
